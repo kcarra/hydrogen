@@ -47,7 +47,11 @@ import {stripScriptsFromTemplate} from './utilities/template';
 import {RenderType} from './utilities/log/log';
 import {Analytics} from './foundation/Analytics/Analytics.server';
 import {ServerAnalyticsRoute} from './foundation/Analytics/ServerAnalyticsRoute.server';
-import {getSyncSessionApi} from './foundation/session/session';
+import {
+  getSyncSessionApi,
+  SessionStorageAdapter,
+} from './foundation/session/session';
+import type {HeadersInit} from 'undici';
 
 declare global {
   // This is provided by a Vite plugin
@@ -70,6 +74,8 @@ interface RequestHandlerOptions {
   context?: RuntimeContext;
   nonce?: string;
   buyerIpHeader?: string;
+  sessionApi?: SessionStorageAdapter;
+  headers?: HeadersInit;
 }
 
 export interface RequestHandler {
@@ -96,15 +102,20 @@ export const renderHydrogen = (
       context,
       nonce,
       buyerIpHeader,
+      headers,
     } = options;
+
+    let sessionApi = options.sessionApi;
 
     const request = new ServerComponentRequest(rawRequest);
     request.ctx.buyerIpHeader = buyerIpHeader;
 
     const url = new URL(request.url);
     const log = getLoggerWithContext(request);
-    const sessionApi = session ? session(log) : undefined;
-    const componentResponse = new ServerComponentResponse();
+    sessionApi = sessionApi ?? (session ? session(log) : undefined);
+    const componentResponse = new ServerComponentResponse(null, {
+      headers: headers ? headers : {},
+    });
 
     request.ctx.session = getSyncSessionApi(
       request,
@@ -112,6 +123,8 @@ export const renderHydrogen = (
       log,
       sessionApi
     );
+
+    componentResponse.session.get = request.ctx.session.get;
 
     /**
      * Inject the cache & context into the module loader so we can pull it out for subrequests.
@@ -138,7 +151,7 @@ export const renderHydrogen = (
         apiRoute &&
         (!apiRoute.hasServerComponent || request.method !== 'GET')
       ) {
-        let apiResponse = await renderApiRoute(
+        const apiResponse = await renderApiRoute(
           request,
           apiRoute,
           shopifyConfig,
@@ -147,10 +160,12 @@ export const renderHydrogen = (
 
         if (apiResponse instanceof Request) {
           let state = {};
+          const url = new URL(request.url);
+          let customPath: string | null = null;
 
           if (apiResponse instanceof RSCRequest) {
             state = apiResponse.state;
-            apiResponse = new Request(request.url);
+            customPath = apiResponse.newUrl;
           }
 
           if (!Array.from((apiResponse.headers as any).keys()).length) {
@@ -160,25 +175,26 @@ export const renderHydrogen = (
           }
 
           if (request.headers.get('Hydrogen-Client') === 'Form-Action') {
-            const url = new URL(request.url);
-            const newUrl = new URL(request.url);
-
             return handleRequest(
               new Request(
                 url.origin +
                   RSC_PATHNAME +
                   `?state=${encodeURIComponent(
                     JSON.stringify({
-                      pathname: newUrl.pathname,
+                      pathname: customPath ?? url.pathname,
                       search: '',
                       ...state,
                     })
                   )}`,
                 {
-                  headers: apiResponse.headers,
+                  headers: request.headers,
                 }
               ),
-              options
+              {
+                ...options,
+                sessionApi,
+                headers: apiResponse.headers as any as HeadersInit,
+              }
             );
           } else {
             // JavaScript is disabled on the client, redirect instead of just rendering the response
@@ -186,7 +202,8 @@ export const renderHydrogen = (
             return new Response(null, {
               status: 303,
               headers: {
-                Location: request.url,
+                ...apiResponse.headers,
+                Location: customPath ? url.origin + customPath : request.url,
               },
             });
           }
@@ -672,6 +689,7 @@ async function hydrate(
     return new Response(bufferedBody, {
       headers: {
         'cache-control': componentResponse.cacheControlHeader,
+        'Set-Cookie': componentResponse.headers.get('Set-Cookie') || '',
       },
     });
   } else if (response) {
@@ -683,6 +701,7 @@ async function hydrate(
     const streamer = rscWriter.renderToPipeableStream(AppRSC);
     response.writeHead(200, 'ok', {
       'cache-control': componentResponse.cacheControlHeader,
+      'Set-Cookie': componentResponse.headers.get('Set-Cookie') || '',
     });
     const stream = streamer.pipe(response) as Writable;
 
@@ -753,6 +772,7 @@ function buildAppSSR(
         <ServerPropsProvider
           initialServerProps={state as any}
           setServerPropsForRsc={() => {}}
+          setRscResponseFromApiRoute={() => {}}
         >
           <PreloadQueries request={request}>
             <Suspense fallback={null}>
