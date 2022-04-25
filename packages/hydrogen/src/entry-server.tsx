@@ -28,7 +28,7 @@ import {
   getApiRouteFromURL,
   renderApiRoute,
   getApiRoutes,
-  RSCRequest,
+  RequestServerComponents,
 } from './utilities/apiRoutes';
 import {ServerPropsProvider} from './foundation/ServerPropsProvider';
 import {isBotUA} from './utilities/bot-ua';
@@ -163,7 +163,7 @@ export const renderHydrogen = (
           const url = new URL(request.url);
           let customPath: string | null = null;
 
-          if (apiResponse instanceof RSCRequest) {
+          if (apiResponse instanceof RequestServerComponents) {
             state = apiResponse.state;
             customPath = apiResponse.newUrl;
           }
