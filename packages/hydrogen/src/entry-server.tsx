@@ -16,7 +16,7 @@ import type {
   ServerHandlerConfig,
 } from './types';
 import {Html, applyHtmlHead} from './framework/Hydration/Html';
-import {ServerComponentResponse} from './framework/Hydration/ServerComponentResponse.server';
+import {ServerComponentResponse} from './framework/Hydration/ServerComponentResponse';
 import {ServerComponentRequest} from './framework/Hydration/ServerComponentRequest.server';
 import {
   preloadRequestCacheData,
