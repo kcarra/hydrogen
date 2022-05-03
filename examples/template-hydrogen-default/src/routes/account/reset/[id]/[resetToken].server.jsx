@@ -8,8 +8,6 @@ export default function Reset() {
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold">Reset account password</h1>
-      <p>Enter a new password for your account</p>
       <PasswordResetForm id={id} resetToken={resetToken} />
     </Layout>
   );

@@ -14,7 +14,7 @@ export default function LoginForm({shopName}) {
 
   function emailValidation(email) {
     if (!email || email.trim() === '') {
-      return 'Email cannot be empty.';
+      return 'Please enter an email';
     }
   }
 
@@ -33,7 +33,7 @@ export default function LoginForm({shopName}) {
 
   function passwordValidation(password) {
     if (!password || password.trim() === '') {
-      return 'Password cannot be empty.';
+      return 'Please enter a password';
     }
   }
 
@@ -46,7 +46,7 @@ export default function LoginForm({shopName}) {
   }
 
   async function onPasswordSubmit() {
-    hasSubmitError(false);
+    setHasSubmitError(false);
     setPasswordError(null);
 
     const error = passwordValidation(password);
@@ -156,9 +156,7 @@ function EmailField({email, setEmail, emailError, shopName, onSubmit}) {
             setEmail(event.target.value);
           }}
         />
-        {emailError && (
-          <p className="text-red-500 text-xs italic">{emailError}</p>
-        )}
+        {emailError && <p className="text-red-500 text-xs">{emailError}</p>}
       </div>
       <div className="flex items-center justify-between">
         <button
@@ -229,7 +227,7 @@ function PasswordField({password, setPassword, passwordError, onSubmit}) {
           }}
         />
         {passwordError && (
-          <p className="text-red-500 text-xs italic">{passwordError}</p>
+          <p className="text-red-500 text-xs">{passwordError}</p>
         )}
       </div>
       <div className="flex items-center justify-between">

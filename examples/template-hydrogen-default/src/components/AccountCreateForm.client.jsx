@@ -14,17 +14,17 @@ export default function AccountCreateForm() {
 
   function emailValidation(email) {
     if (!email || email.trim() === '') {
-      return 'Email cannot be empty.';
+      return 'Please enter an email';
     }
   }
 
   function passwordValidation(password) {
     if (!password || password.trim() === '') {
-      return 'Password cannot be empty.';
+      return 'Please enter a password';
     }
 
     if (password.trim().length < 6) {
-      return 'Password must be at least 6 characters.';
+      return 'Password must be at least 6 characters';
     }
   }
 
@@ -94,9 +94,7 @@ export default function AccountCreateForm() {
               setEmail(event.target.value);
             }}
           />
-          {emailError && (
-            <p className="text-red-500 text-xs italic">{emailError}</p>
-          )}
+          {emailError && <p className="text-red-500 text-xs">{emailError}</p>}
         </div>
         <div className="mb-6">
           <input
@@ -115,7 +113,7 @@ export default function AccountCreateForm() {
             }}
           />
           {passwordError && (
-            <p className="text-red-500 text-xs italic">{passwordError}</p>
+            <p className="text-red-500 text-xs">{passwordError}</p>
           )}
         </div>
         <div className="flex items-center justify-between">
