@@ -7,8 +7,6 @@ import AccountRecoverForm from '../../components/AccountRecoverForm.client';
 export default function Recover() {
   return (
     <Layout>
-      <h1 className="text-2xl font-bold">Reset your password</h1>
-      <p>We will send you an email to reset your password</p>
       <AccountRecoverForm />
     </Layout>
   );

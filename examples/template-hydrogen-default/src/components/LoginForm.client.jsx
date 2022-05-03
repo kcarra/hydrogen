@@ -19,6 +19,8 @@ export default function LoginForm({shopName}) {
   }
 
   function onEmailSubmit() {
+    setEmailError(null);
+
     const error = emailValidation(email);
 
     if (error) {
@@ -44,6 +46,9 @@ export default function LoginForm({shopName}) {
   }
 
   async function onPasswordSubmit() {
+    hasSubmitError(false);
+    setPasswordError(null);
+
     const error = passwordValidation(password);
 
     if (error) {
@@ -65,44 +70,47 @@ export default function LoginForm({shopName}) {
   }
 
   return (
-    <form
-      className="bg-white shadow-md rounded px-8 pt-6 pb-8 mt-6 mb-4"
-      onSubmit={onPasswordSubmit}
-    >
-      {hasSubmitError && (
-        <div className="flex items-center justify-center mb-6 bg-zinc-500">
-          <p className="m-4 text-s text-white">
-            Sorry we did not recognize either your email or password. Please try
-            to sign in again or create a new account.
-          </p>
-        </div>
-      )}
-      {showEmailField && (
-        <EmailField
-          shopName={shopName}
-          email={email}
-          setEmail={setEmail}
-          emailError={emailError}
-          onSubmit={onEmailSubmit}
-        />
-      )}
-      {!showEmailField && (
-        <ValidEmail
-          email={email}
-          onChangeEmail={() => {
-            setShowEmailField(true);
-          }}
-        />
-      )}
-      {!showEmailField && (
-        <PasswordField
-          password={password}
-          setPassword={setPassword}
-          passwordError={passwordError}
-          onSubmit={onPasswordSubmit}
-        />
-      )}
-    </form>
+    <>
+      <h1 className="text-2xl font-bold">Sign in.</h1>
+      <form
+        className="bg-white shadow-md rounded px-8 pt-6 pb-8 mt-6 mb-4"
+        onSubmit={onPasswordSubmit}
+      >
+        {hasSubmitError && (
+          <div className="flex items-center justify-center mb-6 bg-zinc-500">
+            <p className="m-4 text-s text-white">
+              Sorry we did not recognize either your email or password. Please
+              try to sign in again or create a new account.
+            </p>
+          </div>
+        )}
+        {showEmailField && (
+          <EmailField
+            shopName={shopName}
+            email={email}
+            setEmail={setEmail}
+            emailError={emailError}
+            onSubmit={onEmailSubmit}
+          />
+        )}
+        {!showEmailField && (
+          <ValidEmail
+            email={email}
+            onChangeEmail={() => {
+              setShowEmailField(true);
+            }}
+          />
+        )}
+        {!showEmailField && (
+          <PasswordField
+            password={password}
+            setPassword={setPassword}
+            passwordError={passwordError}
+            onSubmit={onPasswordSubmit}
+          />
+        )}
+      </form>
+    </>
   );
 }
 
@@ -153,15 +161,13 @@ function EmailField({email, setEmail, emailError, shopName, onSubmit}) {
         )}
       </div>
       <div className="flex items-center justify-between">
-        <div>
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold uppercase py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            type="button"
-            onClick={onSubmit}
-          >
-            Next
-          </button>
-        </div>
+        <button
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold uppercase py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          type="button"
+          onClick={onSubmit}
+        >
+          Next
+        </button>
       </div>
       <div className="flex items-center mt-4">
         <p className="align-baseline text-sm">
@@ -227,19 +233,15 @@ function PasswordField({password, setPassword, passwordError, onSubmit}) {
         )}
       </div>
       <div className="flex items-center justify-between">
-        <div>
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold uppercase py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            type="button"
-            onClick={onSubmit}
-          >
-            Sign in
-          </button>
-        </div>
-      </div>
-      <div className="flex items-center justify-between mt-4">
+        <button
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold uppercase py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          type="button"
+          onClick={onSubmit}
+        >
+          Sign in
+        </button>
         <Link
-          className="inline-block align-baseline text-sm"
+          className="inline-block align-baseline text-sm text-slate-400"
           to="/account/recover"
         >
           Forgot password

@@ -1,89 +1,99 @@
-import {useNavigate} from '@shopify/hydrogen/client';
-import {
-  useForm,
-  useField,
-  notEmpty,
-  submitSuccess,
-  submitFail,
-} from '@shopify/react-form';
+import React from 'react';
 
 export default function AccountRecoverForm() {
-  const navigate = useNavigate();
-  const {
-    fields: {email},
-    submit,
-    dirty,
-    submitErrors,
-  } = useForm({
-    fields: {
-      email: useField({
-        value: '',
-        validates: [notEmpty('Email is required')],
-      }),
-    },
-    onSubmit: async (fieldValues) => {
-      const response = await callAccountRecoverApi({
-        email: fieldValues.email,
-      });
+  const [submitSuccess, setSubmitSuccess] = React.useState(false);
+  const [submitError, setSubmitError] = React.useState(null);
 
-      if (response.error) {
-        return submitFail([{message: response.error}]);
-      }
+  const [email, setEmail] = React.useState('');
+  const [emailError, setEmailError] = React.useState(null);
 
-      navigate('/account', {fromRecover: true});
-      return submitSuccess();
-    },
-  });
+  function emailValidation(email) {
+    if (!email || email.trim() === '') {
+      return 'Email cannot be empty.';
+    }
+  }
+
+  async function onSubmit() {
+    setEmailError(null);
+    setSubmitError(null);
+
+    const newEmailError = emailValidation(email);
+    if (newEmailError) {
+      setEmailError(newEmailError);
+      return;
+    }
+
+    const response = await callAccountRecoverApi({
+      email,
+    });
+
+    if (response?.error?.length > 0) {
+      setSubmitError(response.error[0].message);
+      return;
+    }
+
+    setSubmitSuccess(true);
+  }
 
   return (
-    <form
-      className="bg-white shadow-md rounded px-8 pt-6 pb-8 mt-6 mb-4"
-      onSubmit={submit}
-    >
-      {submitErrors.length > 0 && (
-        <div className="flex items-center justify-between mb-6">
-          {submitErrors.map((error) => (
-            <p key={error} className="text-red-500 text-xs italic">
-              {error}
-            </p>
-          ))}
-        </div>
+    <>
+      {submitSuccess ? (
+        <>
+          <h1 className="text-2xl font-bold">Request Sent.</h1>
+          <p className="mt-6">
+            If that email address is in our system, you will receive an email
+            with instructions about how to reset your password in a few minutes.
+          </p>
+        </>
+      ) : (
+        <>
+          <h1 className="text-2xl font-bold">Forgot Password.</h1>
+          <p className="mt-6">
+            Enter the email address associated with your account to recieve a
+            link to reset your password.
+          </p>
+        </>
       )}
-      <div className="mb-6">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="email"
-        >
-          Email
-        </label>
-        <input
-          className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline${
-            email.error ? ' border-red-500 mb-3' : ''
-          }`}
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          placeholder="Email"
-          value={email.value}
-          onChange={email.onChange}
-          onBlur={email.onBlur}
-        />
-        {email.error && (
-          <p className="text-red-500 text-xs italic">{email.error}</p>
+      <form
+        className="bg-white shadow-md rounded px-8 pt-6 pb-8 mt-6 mb-4"
+        onSubmit={onSubmit}
+      >
+        {submitError && (
+          <div className="flex items-center justify-center mb-6 bg-zinc-500">
+            <p className="m-4 text-s text-white">{submitError}</p>
+          </div>
         )}
-      </div>
-      <div className="flex items-center justify-between">
-        <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          type="submit"
-          disabled={!dirty}
-          onClick={submit}
-        >
-          Submit
-        </button>
-      </div>
-    </form>
+        <div className="mb-6">
+          <input
+            className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline${
+              emailError ? ' border-red-500 mb-3' : ''
+            }`}
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="Email address"
+            aria-label="Email address"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+            }}
+          />
+          {emailError && (
+            <p className="text-red-500 text-xs italic">{emailError}</p>
+          )}
+        </div>
+        <div className="flex items-center justify-between">
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold uppercase py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            type="button"
+            onClick={onSubmit}
+          >
+            Request Reset Link
+          </button>
+        </div>
+      </form>
+    </>
   );
 }
 

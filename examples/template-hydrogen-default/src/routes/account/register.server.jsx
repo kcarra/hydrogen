@@ -7,7 +7,6 @@ import AccountCreateForm from '../../components/AccountCreateForm.client';
 export default function Register() {
   return (
     <Layout>
-      <h1 className="text-2xl font-bold">Create an Account.</h1>
       <AccountCreateForm />
     </Layout>
   );

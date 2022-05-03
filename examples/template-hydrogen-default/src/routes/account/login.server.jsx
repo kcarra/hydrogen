@@ -5,7 +5,6 @@ import {
   setCustomerAccessToken,
 } from '@shopify/hydrogen';
 import gql from 'graphql-tag';
-import {Suspense} from 'react';
 
 import Layout from '../../components/Layout.server';
 import LoginForm from '../../components/LoginForm.client';
@@ -23,7 +22,6 @@ export default function Login() {
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold">Sign in.</h1>
       <LoginForm shopName={name} />
     </Layout>
   );
