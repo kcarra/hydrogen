@@ -1,178 +1,138 @@
-import {useNavigate} from '@shopify/hydrogen/client';
-import {
-  useForm,
-  useField,
-  notEmpty,
-  submitSuccess,
-  submitFail,
-} from '@shopify/react-form';
+import React from 'react';
+import {useNavigate, Link} from '@shopify/hydrogen/client';
 
 export default function AccountCreateForm() {
   const navigate = useNavigate();
-  const {
-    fields: {email, password, firstName, lastName},
-    submit,
-    dirty,
-    submitErrors,
-  } = useForm({
-    fields: {
-      email: useField({
-        value: '',
-        validates: [notEmpty('Email is required')],
-      }),
-      password: useField({
-        value: '',
-        validates: [notEmpty('Password is required')],
-      }),
-      firstName: useField({
-        value: '',
-        validates: [],
-      }),
-      lastName: useField({
-        value: '',
-        validates: [],
-      }),
-    },
-    onSubmit: async (fieldValues) => {
-      const accountCreateResponse = await callAccountCreateApi({
-        email: fieldValues.email,
-        password: fieldValues.password,
-        firstName: fieldValues.firstName,
-        lastName: fieldValues.lastName,
-      });
 
-      if (accountCreateResponse.error) {
-        return submitFail([{message: accountCreateResponse.error}]);
-      }
+  const [hasSubmitError, setHasSubmitError] = React.useState(null);
 
-      // this can be avoided if customerCreate mutation returns customerAccessToken
-      await callLoginApi({
-        email: fieldValues.email,
-        password: fieldValues.password,
-      });
+  const [email, setEmail] = React.useState('');
+  const [emailError, setEmailError] = React.useState(null);
 
-      navigate('/account');
-      return submitSuccess();
-    },
-  });
+  const [password, setPassword] = React.useState('');
+  const [passwordError, setPasswordError] = React.useState(null);
+
+  function emailValidation(email) {
+    if (!email || email.trim() === '') {
+      return 'Email cannot be empty.';
+    }
+  }
+
+  function passwordValidation(password) {
+    if (!password || password.trim() === '') {
+      return 'Password cannot be empty.';
+    }
+
+    if (password.trim().length < 6) {
+      return 'Password must be at least 6 characters.';
+    }
+  }
+
+  async function onSubmit() {
+    setEmailError(null);
+    setPasswordError(null);
+
+    const newEmailError = emailValidation(email);
+    if (newEmailError) {
+      setEmailError(newEmailError);
+    }
+
+    const newPasswordError = passwordValidation(password);
+    if (newPasswordError) {
+      setPasswordError(newPasswordError);
+    }
+
+    if (newEmailError || newPasswordError) {
+      return;
+    }
+
+    const accountCreateResponse = await callAccountCreateApi({
+      email,
+      password,
+    });
+
+    if (accountCreateResponse.error) {
+      setHasSubmitError(accountCreateResponse.error[0].message);
+      return;
+    }
+
+    // this can be avoided if customerCreate mutation returns customerAccessToken
+    await callLoginApi({
+      email,
+      password,
+    });
+
+    navigate('/account');
+  }
 
   return (
     <form
       className="bg-white shadow-md rounded px-8 pt-6 pb-8 mt-6 mb-4"
-      onSubmit={submit}
+      onSubmit={onSubmit}
     >
-      {submitErrors.length > 0 && (
-        <div className="flex items-center justify-between mb-6">
-          {submitErrors.map((error) => (
-            <p key={error} className="text-red-500 text-xs italic">
-              {error}
-            </p>
-          ))}
+      {hasSubmitError && (
+        <div className="flex items-center justify-center mb-6 bg-zinc-500">
+          <p className="m-4 text-s text-white">{hasSubmitError}</p>
         </div>
       )}
       <div className="mb-6">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="firstName"
-        >
-          First Name
-        </label>
         <input
           className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline${
-            firstName.error ? ' border-red-500 mb-3' : ''
-          }`}
-          id="firstName"
-          name="firstName"
-          type="firstName"
-          placeholder="First Name"
-          value={firstName.value}
-          onChange={firstName.onChange}
-          onBlur={firstName.onBlur}
-        />
-        {firstName.error && (
-          <p className="text-red-500 text-xs italic">{firstName.error}</p>
-        )}
-      </div>
-      <div className="mb-6">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="lastName"
-        >
-          Last Name
-        </label>
-        <input
-          className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline${
-            lastName.error ? ' border-red-500 mb-3' : ''
-          }`}
-          id="lastName"
-          name="lastName"
-          type="lastName"
-          placeholder="Last Name"
-          value={lastName.value}
-          onChange={lastName.onChange}
-          onBlur={lastName.onBlur}
-        />
-        {lastName.error && (
-          <p className="text-red-500 text-xs italic">{lastName.error}</p>
-        )}
-      </div>
-      <div className="mb-6">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="email"
-        >
-          Email
-        </label>
-        <input
-          className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline${
-            email.error ? ' border-red-500 mb-3' : ''
+            emailError ? ' border-red-500 mb-3' : ''
           }`}
           id="email"
           name="email"
           type="email"
-          autoComplete="username"
-          placeholder="Email"
-          value={email.value}
-          onChange={email.onChange}
-          onBlur={email.onBlur}
+          autoComplete="email"
+          placeholder="Email address"
+          aria-label="Email address"
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+          }}
         />
-        {email.error && (
-          <p className="text-red-500 text-xs italic">{email.error}</p>
+        {emailError && (
+          <p className="text-red-500 text-xs italic">{emailError}</p>
         )}
       </div>
       <div className="mb-6">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="password"
-        >
-          Password
-        </label>
         <input
           className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline${
-            password.error ? ' border-red-500 mb-3' : ''
+            passwordError ? ' border-red-500 mb-3' : ''
           }`}
           id="password"
           name="password"
           type="password"
           autoComplete="current-password"
           placeholder="Password"
-          value={password.value}
-          onChange={password.onChange}
-          onBlur={password.onBlur}
+          aria-label="Password"
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+          }}
         />
-        {password.error && (
-          <p className="text-red-500 text-xs italic">{password.error}</p>
+        {passwordError && (
+          <p className="text-red-500 text-xs italic">{passwordError}</p>
         )}
       </div>
       <div className="flex items-center justify-between">
-        <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          type="submit"
-          disabled={!dirty}
-          onClick={submit}
-        >
-          Create
-        </button>
+        <div>
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold uppercase py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            type="button"
+            onClick={onSubmit}
+          >
+            Create Account
+          </button>
+        </div>
+      </div>
+      <div className="flex items-center mt-4">
+        <p className="align-baseline text-sm">
+          Already have an account? &nbsp;
+          <Link className="inline underline" to="/account">
+            Sign in
+          </Link>
+        </p>
       </div>
     </form>
   );
