@@ -1,133 +1,107 @@
+import React from 'react';
 import {useNavigate, Link} from '@shopify/hydrogen/client';
-import {
-  useForm,
-  useField,
-  notEmpty,
-  submitSuccess,
-  submitFail,
-} from '@shopify/react-form';
 
-export default function LoginForm() {
+export default function LoginForm({shopName}) {
   const navigate = useNavigate();
-  const {
-    fields: {email, password},
-    submit,
-    dirty,
-    submitErrors,
-  } = useForm({
-    fields: {
-      email: useField({
-        value: '',
-        validates: [notEmpty('Email is required')],
-      }),
-      password: useField({
-        value: '',
-        validates: [notEmpty('Password is required')],
-      }),
-    },
-    onSubmit: async (fieldValues) => {
-      const response = await callLoginApi({
-        email: fieldValues.email,
-        password: fieldValues.password,
-      });
+  const [hasSubmitError, setHasSubmitError] = React.useState(false);
+  const [showEmailField, setShowEmailField] = React.useState(true);
 
-      if (response.error) {
-        return submitFail([{message: 'Incorrect email or password.'}]);
-      } else {
-        navigate('/account');
-        return submitSuccess();
-      }
-    },
-  });
+  const [email, setEmail] = React.useState('');
+  const [emailError, setEmailError] = React.useState(null);
+
+  const [password, setPassword] = React.useState('');
+  const [passwordError, setPasswordError] = React.useState(null);
+
+  function emailValidation(email) {
+    if (!email || email.trim() === '') {
+      return 'Email cannot be empty.';
+    }
+  }
+
+  function onEmailSubmit() {
+    const error = emailValidation(email);
+
+    if (error) {
+      setEmailError(error);
+      return;
+    }
+
+    setShowEmailField(false);
+  }
+
+  function passwordValidation(password) {
+    if (!password || password.trim() === '') {
+      return 'Password cannot be empty.';
+    }
+  }
+
+  function resetForm() {
+    setShowEmailField(true);
+    setEmail('');
+    setEmailError(null);
+    setPassword('');
+    setPasswordError(null);
+  }
+
+  async function onPasswordSubmit() {
+    const error = passwordValidation(password);
+
+    if (error) {
+      setPasswordError(error);
+      return;
+    }
+
+    const response = await callLoginApi({
+      email,
+      password,
+    });
+
+    if (response.error) {
+      setHasSubmitError(true);
+      resetForm();
+    } else {
+      navigate('/account');
+    }
+  }
 
   return (
     <form
       className="bg-white shadow-md rounded px-8 pt-6 pb-8 mt-6 mb-4"
-      onSubmit={submit}
+      onSubmit={onPasswordSubmit}
     >
-      {submitErrors.length > 0 && (
-        <div className="flex items-center justify-between mb-6">
-          {submitErrors.map((error) => (
-            <p key={error} className="text-red-500 text-xs italic">
-              {error}
-            </p>
-          ))}
+      {hasSubmitError && (
+        <div className="flex items-center justify-center mb-6 bg-zinc-500">
+          <p className="m-4 text-s text-white">
+            Sorry we did not recognize either your email or password. Please try
+            to sign in again or create a new account.
+          </p>
         </div>
       )}
-      <div className="mb-6">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="email"
-        >
-          Email
-        </label>
-        <input
-          className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline${
-            email.error ? ' border-red-500 mb-3' : ''
-          }`}
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="username"
-          placeholder="Email"
-          value={email.value}
-          onChange={email.onChange}
-          onBlur={email.onBlur}
+      {showEmailField && (
+        <EmailField
+          shopName={shopName}
+          email={email}
+          setEmail={setEmail}
+          emailError={emailError}
+          onSubmit={onEmailSubmit}
         />
-        {email.error && (
-          <p className="text-red-500 text-xs italic">{email.error}</p>
-        )}
-      </div>
-      <div className="mb-6">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="password"
-        >
-          Password
-        </label>
-        <input
-          className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline${
-            password.error ? ' border-red-500 mb-3' : ''
-          }`}
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          placeholder="Password"
-          value={password.value}
-          onChange={password.onChange}
-          onBlur={password.onBlur}
+      )}
+      {!showEmailField && (
+        <ValidEmail
+          email={email}
+          onChangeEmail={() => {
+            setShowEmailField(true);
+          }}
         />
-        {password.error && (
-          <p className="text-red-500 text-xs italic">{password.error}</p>
-        )}
-      </div>
-      <div className="flex items-center justify-between">
-        <div>
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            type="submit"
-            disabled={!dirty}
-            onClick={submit}
-          >
-            Sign in
-          </button>
-        </div>
-        <Link
-          className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
-          to="/account/register"
-        >
-          Create account
-        </Link>
-      </div>
-      <div className="flex items-center justify-between mt-4">
-        <Link
-          className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
-          to="/account/recover"
-        >
-          Forgot your password?
-        </Link>
-      </div>
+      )}
+      {!showEmailField && (
+        <PasswordField
+          password={password}
+          setPassword={setPassword}
+          passwordError={passwordError}
+          onSubmit={onPasswordSubmit}
+        />
+      )}
     </form>
   );
 }
@@ -153,4 +127,124 @@ function callLoginApi({email, password}) {
         error: error.toString(),
       };
     });
+}
+
+function EmailField({email, setEmail, emailError, shopName, onSubmit}) {
+  return (
+    <>
+      <div className="mb-6">
+        <input
+          className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline${
+            emailError ? ' border-red-500 mb-3' : ''
+          }`}
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder="Email address"
+          aria-label="Email address"
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+          }}
+        />
+        {emailError && (
+          <p className="text-red-500 text-xs italic">{emailError}</p>
+        )}
+      </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold uppercase py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            type="button"
+            onClick={onSubmit}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+      <div className="flex items-center mt-4">
+        <p className="align-baseline text-sm">
+          New to {shopName}? &nbsp;
+          <Link className="inline underline" to="/account/register">
+            Create an account
+          </Link>
+        </p>
+      </div>
+    </>
+  );
+}
+
+function ValidEmail({email, onChangeEmail}) {
+  return (
+    <div className="mb-6 flex items-center justify-between">
+      <div>
+        <p>{email}</p>
+        <input
+          className="hidden"
+          type="text"
+          autoComplete="username"
+          value={email}
+          readOnly
+        ></input>
+      </div>
+      <div>
+        <button
+          className="inline-block align-baseline text-sm underline"
+          type="button"
+          onClick={() => {
+            onChangeEmail();
+          }}
+        >
+          Change email
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PasswordField({password, setPassword, passwordError, onSubmit}) {
+  return (
+    <>
+      <div className="mb-6">
+        <input
+          className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline${
+            passwordError ? ' border-red-500 mb-3' : ''
+          }`}
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          placeholder="Password"
+          aria-label="Password"
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+          }}
+        />
+        {passwordError && (
+          <p className="text-red-500 text-xs italic">{passwordError}</p>
+        )}
+      </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold uppercase py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            type="button"
+            onClick={onSubmit}
+          >
+            Sign in
+          </button>
+        </div>
+      </div>
+      <div className="flex items-center justify-between mt-4">
+        <Link
+          className="inline-block align-baseline text-sm"
+          to="/account/recover"
+        >
+          Forgot password
+        </Link>
+      </div>
+    </>
+  );
 }

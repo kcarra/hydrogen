@@ -1,17 +1,41 @@
-import {NoStore, setCustomerAccessToken} from '@shopify/hydrogen';
+import {
+  useShopQuery,
+  CacheDays,
+  NoStore,
+  setCustomerAccessToken,
+} from '@shopify/hydrogen';
 import gql from 'graphql-tag';
+import {Suspense} from 'react';
 
 import Layout from '../../components/Layout.server';
 import LoginForm from '../../components/LoginForm.client';
 
 export default function Login() {
+  const {
+    data: {
+      shop: {name},
+    },
+  } = useShopQuery({
+    query: QUERY,
+    cache: CacheDays(),
+    preload: '*',
+  });
+
   return (
     <Layout>
-      <h1 className="text-2xl font-bold">Login</h1>
-      <LoginForm />
+      <h1 className="text-2xl font-bold">Sign in.</h1>
+      <LoginForm shopName={name} />
     </Layout>
   );
 }
+
+const QUERY = gql`
+  query shopInfo {
+    shop {
+      name
+    }
+  }
+`;
 
 export async function api(request, {session, queryShop}) {
   const jsonBody = await request.json();
